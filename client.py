@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request
 import numpy as np
-from sklearn.externals import joblib
+import joblib
 
 app = Flask(__name__)
 
@@ -16,9 +16,13 @@ def predict():
         pclass = float(request.form['pclass'])
         sex = float(request.form['sex'])
         age = float(request.form['age'])
-        fare = float(request.form['fare'])
+        sibsp = int(request.form['sibsp'])
+        parch = int(request.form['parch'])
+        embarked = int(request.form['embarked'])
 
-        input_data = np.array([[pclass, sex, age, fare]])
+        input_data = np.array([[pclass, sex, age, sibsp, embarked]])
+        print("Input Data:", input_data)
+
         prediction = model.predict(input_data)[0]
 
         return render_template('result.html', prediction=prediction)
