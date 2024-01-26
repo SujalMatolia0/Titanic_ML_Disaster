@@ -46,8 +46,8 @@ class FeatureDropper(BaseEstimator, TransformerMixin):
         return X.drop(["Embarked", "Name", "Ticket", "Cabin", "Sex", "N" ], axis = 1, errors = "ignore")
     
 
-df = pd.read_csv("train.csv")
-test_df = pd.read_csv("test.csv")
+df = pd.read_csv("D:\titanic_ml_disaster\train.csv")
+test_df = pd.read_csv("D:\titanic_ml_disaster\train.csv")
 
 split = StratifiedShuffleSplit(n_splits= 1, test_size= 0.2)
 for train_indice, test_indice in split.split(df, df[["Survived", "Pclass", "Sex"]]):
