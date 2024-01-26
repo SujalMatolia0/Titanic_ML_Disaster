@@ -122,4 +122,6 @@ final_df["Survived"] = predictions
 final_df.to_csv("gender_submission.csv", index = False)
 
 final_df
-
+##Time to dump it##
+import joblib
+joblib.dump(prod_final_clf, "predicting_model.joblib")
