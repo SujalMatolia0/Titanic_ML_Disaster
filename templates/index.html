@@ -8,9 +8,10 @@
 <body>
     <h1>Titanic Survival Prediction</h1>
     <form action="/predict" method="post">
+        <label for = "name">Your name:</label>
+        <input type = "text" name = "name" required><br>
         <label for="pclass">Pclass:</label>
         <input type="number" name="pclass" required><br>
-
         <label for="sex">Sex:</label>
         <input type="radio" name="sex" lable="male" value=0 required><br>
         <input type="radio" name="sex" lable="female" value=1 required><br>
@@ -21,8 +22,9 @@
         <label for="sbisp">Fare:</label>
         <input type="number" name="sbisp" required><br>
 
-        <label for="parch">Fare:</label>
+        <label for="parch">Parents/children:</label>
         <input type="number" name="parch" required><br>
+        <label for = "Embarked">
 
         <button type="submit">Predict</button>
     </form>
