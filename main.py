@@ -44,7 +44,6 @@ class FeatureDropper(BaseEstimator, TransformerMixin):
         return self
     def transform(self, X):
         return X.drop(["Embarked", "Name", "Ticket", "Cabin", "Sex", "N" ], axis = 1, errors = "ignore")
-    
 
 split = StratifiedShuffleSplit(n_splits= 1, test_size= 0.2)
 for train_indice, test_indice in split.split(df, df[["Survived", "Pclass", "Sex"]]):
