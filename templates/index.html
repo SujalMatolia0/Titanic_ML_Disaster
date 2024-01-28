@@ -1,32 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Titanic Survival Prediction</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            background: #000;
+            color: #fff;
+            overflow-y: auto;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        img {
+            position: fixed;
+            right: 0;
+            bottom: 0;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            z-index: -1;
+        }
+
+        h1 {
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        form {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        label {
+            color: #333;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        label input {
+            color: #333;
+            margin-right: 5px;
+        }
+
+        input[type="radio"] {
+            width: 20px; /* Adjust the width of radio buttons */
+        }
+
+        input,
+        button {
+            width: 100%; /* Set the width of other input fields and buttons */
+            padding: 10px;
+            margin-bottom: 20px;
+            box-sizing: border-box;
+        }
+
+        button {
+            background-color: #800080;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
 </head>
+
 <body>
+    <img src="https://i.makeagif.com/media/1-15-2014/pLqUcZ.gif" alt="background">
+
     <h1>Titanic Survival Prediction</h1>
-    <form action="/predict" method="post">
-        <label for = "name">Your name:</label>
-        <input type = "text" name = "name" required><br>
-        <label for="pclass">Pclass:</label>
-        <input type="number" name="pclass" required><br>
-        <label for="sex">Sex:</label>
-        <input type="radio" name="sex" lable="male" value=0 required><br>
-        <input type="radio" name="sex" lable="female" value=1 required><br>
-      
-        <label for="age">Age:</label>
-        <input type="number" name="age" required><br>
+    <form action="/predict" method="post" id="predictionForm">
+        <!-- Step 1 -->
+        <div id="step1">
+            <label for="name">Your name:</label>
+            <input type="text" name="name" required><br>
+            <button type="button" onclick="showStep('step2')">Next</button>
+        </div>
 
-        <label for="sbisp">Fare:</label>
-        <input type="number" name="sbisp" required><br>
+        <!-- Step 2 -->
+        <div id="step2" class="hidden">
+            <label for="pclass">Pclass:</label>
+            <input type="number" name="pclass" required><br>
+            <button type="button" onclick="showStep('step3')">Next</button>
+        </div>
 
-        <label for="parch">Parents/children:</label>
-        <input type="number" name="parch" required><br>
-        <label for = "Embarked">
+        <!-- Step 3 -->
+        <div id="step3" class="hidden">
+            <label for="sex">Sex:</label>
+            <label for="male">
+                <input type="radio" id="male" name="sex" value="0" required>
+                Male
+            </label>
+            <label for="female">
+                <input type="radio" id="female" name="sex" value="1" required>
+                Female
+            </label><br>
+            <button type="button" onclick="showStep('step4')">Next</button>
+        </div>
 
-        <button type="submit">Predict</button>
+        <!-- Step 4 -->
+        <div id="step4" class="hidden">
+            <label for="age">Age:</label>
+            <input type="number" name="age" required><br>
+
+            <label for="sibsp">Sibling/Spouse:</label>
+            <input type="number" name="sibsp" required><br>
+
+            <label for="parch">Parents/children:</label>
+            <input type="number" name="parch" required><br>
+
+            <button type="button" onclick="showStep('step5')">Next</button>
+        </div>
+
+        <!-- Step 5 -->
+        <div id="step5" class="hidden">
+            <label for="embarked">Embarked:</label>
+
+            <label for="c">
+                <input type="radio" name="embarked" value="c" required> C
+            </label><br>
+
+            <label for="s">
+                <input type="radio" name="embarked" value="s" required> S
+            </label><br>
+
+            <label for="q">
+                <input type="radio" name="embarked" value="q" required> Q
+            </label><br>
+
+            <button type="submit">Predict</button>
+        </div>
     </form>
+
+    <script>
+        function showStep(stepId) {
+            // Hide the current step
+            document.getElementById('step1').classList.add('hidden');
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.add('hidden');
+            document.getElementById('step4').classList.add('hidden');
+            document.getElementById('step5').classList.add('hidden');
+
+            // Show the requested step
+            document.getElementById(stepId).classList.remove('hidden');
+        }
+    </script>
 </body>
+
 </html>
