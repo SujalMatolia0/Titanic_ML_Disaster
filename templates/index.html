@@ -56,8 +56,50 @@
             margin-right: 5px;
         }
 
+        label {
+            position: relative;
+            padding-left: 30px;
+            cursor: pointer;
+            display: inline-block;
+            color: #333; /* Adjust text color for better visibility */
+        }
+
         input[type="radio"] {
-            width: 20px; /* Adjust the width of radio buttons */
+            opacity: 0;
+            position: absolute;
+        }
+
+        .radio-check {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #fff;
+            border: 2px solid #573b8a;
+            transition: background-color 0.3s ease;
+        }
+
+        label:hover .radio-check {
+            background-color: #f2f2f2;
+        }
+
+        /* Style the radio button when selected */
+        input[type="radio"]:checked + .radio-check {
+            background-color: #573b8a;
+            border-color: #573b8a;
+        }
+
+        input[type="radio"]:checked + .radio-check:after {
+            content: '\2022';
+            font-size: 16px;
+            color: #fff;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
 
         input,
@@ -103,13 +145,15 @@
 
         <!-- Step 3 -->
         <div id="step3" class="hidden">
-            <label for="sex">Sex:</label>
-            <label for="male">
+            <label for="sex">Sex:</label><br>
+            <label class="radio-label">
                 <input type="radio" id="male" name="sex" value="0" required>
+                <span class="radio-check"></span>
                 Male
-            </label>
-            <label for="female">
+            </label><br>
+            <label class="radio-label">
                 <input type="radio" id="female" name="sex" value="1" required>
+                <span class="radio-check"></span>
                 Female
             </label><br>
             <button type="button" onclick="showStep('step4')">Next</button>
