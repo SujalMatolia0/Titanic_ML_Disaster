@@ -16,12 +16,13 @@ Requirements:
 Installation:
 1. Clone the repository:
    git clone https://github.com/SujalMatolia0/Titanic_ML_Disaster.git
+   
    cd Titanic_ML_Disaster
 
-2. Install dependencies:
+3. Install dependencies:
    pip install -r requirements.txt
 
-3. Download the Kaggle Titanic dataset (train.csv and test.csv)
+4. Download the Kaggle Titanic dataset (train.csv and test.csv)
 
 Usage:
 - Training: python main.py --train
