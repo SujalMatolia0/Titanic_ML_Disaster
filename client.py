@@ -1,50 +1,66 @@
-from flask import Flask, render_template, request
+import streamlit as st
 import numpy as np
 import joblib
 
-app = Flask(__name__)
-
 model = joblib.load("predicting_model.joblib")
-@app.route('/')
-def home():
-    return render_template('index.html')
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    if request.method == 'POST':
-        passId = 312
-        pclass = int(request.form['pclass'])
-        sex = int(request.form['sex'])
-        age = float(request.form['age'])
-        sibsp = int(request.form['sibsp'])
-        parch = int(request.form['parch'])
-        embarked = str(request.form['embarked'])
-        fare = 262.3750
-        print(" Recieved from Data - \n Pclass : {} \n Sex : {} \n Age : {} \n Siblings\Spouse : {} \n Parch : {} \n Embarked : {}".format(pclass, sex, age, sibsp, parch, embarked))
-        if sex:
-            Male = 0.0
-            Female = 1.0
-        else:
-            Male = 1.0
-            Female = 0.0
-        if (embarked == 's'):
-            C = 0.0
-            Q = 0.0
-            S = 1.0
-        elif (embarked == 'c'):
-            C = 1.0
-            Q = 0.0
-            S = 0.0
-        else:
-            C = 0.0
-            Q = 1.0
-            S = 0.0
-        input_data = np.array([[passId, pclass, age, sibsp, parch, fare,  C, S, Q, Female, Male]], dtype = object)
-        print("Input Data:", input_data)
 
-        prediction = model.predict(input_data)[0]
-        print("The prediction is : ", prediction)
-        return render_template('result.html', prediction=prediction)
+st.title("Titanic Survival Prediction")
 
-if __name__ == '__main__':
-    app.run(debug=True)
+
+with st.form("prediction_form"):
+    st.header("Passenger Details")
+
+    # Input fields
+    pclass = st.selectbox("Passenger Class", [1, 2, 3], index=2)
+    sex = st.radio("Gender", ["Male", "Female"])
+    age = st.slider("Age", 0.0, 100.0, 30.0)
+    sibsp = st.slider("Number of Siblings/Spouses", 0, 8, 0)
+    parch = st.slider("Number of Parents/Children", 0, 6, 0)
+    embarked = st.selectbox("Port of Embarkation", ["S", "C", "Q"], index=0)
+
+    submitted = st.form_submit_button("Predict Survival")
+
+
+if submitted:
+    sex_male = 1.0 if sex == "Male" else 0.0
+    sex_female = 1.0 if sex == "Female" else 0.0
+
+    embarked_c = 1.0 if embarked == "C" else 0.0
+    embarked_s = 1.0 if embarked == "S" else 0.0
+    embarked_q = 1.0 if embarked == "Q" else 0.0
+
+    passId = 312
+    fare = 262.3750
+
+    input_data = np.array(
+        [
+            [
+                passId,
+                pclass,
+                age,
+                sibsp,
+                parch,
+                fare,
+                embarked_c,
+                embarked_s,
+                embarked_q,
+                sex_female,
+                sex_male,
+            ]
+        ],
+        dtype=object,
+    )
+
+    # Make prediction
+    prediction = model.predict(input_data)[0]
+
+    # Show result
+    st.subheader("Prediction Result")
+    if prediction == 1:
+        st.success("This passenger would likely have survived!")
+    else:
+        st.error("This passenger would likely not have survived.")
+
+    # Show raw prediction for debugging
+    st.write(f"Model prediction value: {prediction}")

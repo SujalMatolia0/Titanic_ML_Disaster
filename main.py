@@ -1,126 +1,222 @@
 import numpy as np
 import pandas as pd
+import streamlit as st
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.model_selection import GridSearchCV
-import matplotlib.pyplot as plt
-import seaborn as sns
+import joblib
+from PIL import Image
 
 
+# 1. Machine Learning Pipeline Classes
 class AgeImputer(BaseEstimator, TransformerMixin):
-    def fit(self, X, y =None):
+    def fit(self, X, y=None):
         return self
+
     def transform(self, X):
         imputer = SimpleImputer(strategy="mean")
         X["Age"] = imputer.fit_transform(X[["Age"]])
         return X
-    
+
+
 class FeatureEncoder(BaseEstimator, TransformerMixin):
-    def fit(self, X, y =None):
+    def fit(self, X, y=None):
+
+        self.embarked_encoder = OneHotEncoder(
+            sparse_output=False, handle_unknown="ignore"
+        )
+        self.sex_encoder = OneHotEncoder(drop="if_binary", sparse_output=False)
+
+        self.embarked_encoder.fit(X[["Embarked"]].fillna("S"))
+        self.sex_encoder.fit(X[["Sex"]].fillna("male"))
         return self
+
     def transform(self, X):
-        encoder = OneHotEncoder()
-        matrix  = encoder.fit_transform(X[["Embarked"]]).toarray()
-        column_names =  ["C", "S", "Q", "N"]
-        
-        for i in range(len(matrix.T)):
-            X[column_names[i]] = matrix.T[i]
-        matrix = encoder.fit_transform(X[["Sex"]]).toarray()    
-        
-        column_names =  ["Female", "Male"]
-        
-        for i in range(len(matrix.T)):
-            X[column_names[i]] = matrix.T[i]
-        
+
+        X = X.copy()
+        X["Embarked"] = X["Embarked"].fillna("S")
+        X["Sex"] = X["Sex"].fillna("male")
+
+        embarked_matrix = self.embarked_encoder.transform(X[["Embarked"]])
+        sex_matrix = self.sex_encoder.transform(X[["Sex"]])
+
+        embarked_cols = [
+            f"Embarked_{cat}" for cat in self.embarked_encoder.categories_[0]
+        ]
+        sex_col = "Female"
+
+        for i, col in enumerate(embarked_cols):
+            X[col] = embarked_matrix[:, i]
+
+        X[sex_col] = sex_matrix[:, 0] if sex_matrix.shape[1] > 0 else 0
+
+        if "PassengerId" not in X.columns:
+            X["PassengerId"] = np.arange(len(X))
+
         return X
-    
+
+
 class FeatureDropper(BaseEstimator, TransformerMixin):
-    def fit(self, X, y =None):
+    def fit(self, X, y=None):
+
+        self.feature_names = [
+            col
+            for col in X.columns
+            if col not in ["Embarked", "Name", "Ticket", "Cabin", "Sex"]
+        ]
         return self
+
     def transform(self, X):
-        return X.drop(["Embarked", "Name", "Ticket", "Cabin", "Sex", "N" ], axis = 1, errors = "ignore")
-    
-df = pd.read_csv("train.csv")
-test_df = pd.read_csv("test.csv")
 
-split = StratifiedShuffleSplit(n_splits= 1, test_size= 0.2)
-for train_indice, test_indice in split.split(df, df[["Survived", "Pclass", "Sex"]]):
-    strat_train_set = df.loc[train_indice]
-    strat_test_set = df.loc[test_indice]
-    
-pipeline = Pipeline([("ageimputer", AgeImputer()),
-                     ("featureencoder", FeatureEncoder()),
-                     ("featuredropper", FeatureDropper())])
+        return X[[col for col in self.feature_names if col in X.columns]]
 
-strat_train_set = pipeline.fit_transform(strat_train_set)
 
-X = strat_train_set.drop(['Survived'], axis = 1)
-Y = strat_train_set['Survived']
+def train_model():
 
-scaler = StandardScaler()
-X_data = scaler.fit_transform(X)
-y_data = Y.to_numpy()
+    df = pd.read_csv("train.csv")
 
-clf = RandomForestClassifier()
-param_grid = [
-    {"n_estimators" : [10, 100, 200, 500], "max_depth": [None, 5, 10], "min_samples_split": [2, 3, 4]}
-]
+    split = StratifiedShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    for train_idx, test_idx in split.split(df, df[["Survived", "Pclass", "Sex"]]):
+        strat_train_set = df.loc[train_idx]
+        strat_test_set = df.loc[test_idx]
 
-grid_search = GridSearchCV(clf, param_grid, cv = 3, scoring=  "accuracy", return_train_score= True)
-grid_search.fit(X_data, y_data)
+    pipeline = Pipeline(
+        [
+            ("ageimputer", AgeImputer()),
+            ("featureencoder", FeatureEncoder()),
+            ("featuredropper", FeatureDropper()),
+        ]
+    )
 
-final_clf = grid_search.best_estimator_
+    strat_train_set = pipeline.fit_transform(strat_train_set)
+    X_train = strat_train_set.drop(["Survived"], axis=1)
+    y_train = strat_train_set["Survived"]
 
-strat_test_set = pipeline.fit_transform(strat_test_set)
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
 
-X_test = strat_test_set.drop(["Survived"], axis = 1)
-Y_test = strat_test_set["Survived"]
+    param_grid = {
+        "n_estimators": [100, 200],
+        "max_depth": [None, 10],
+        "min_samples_split": [2, 4],
+    }
 
-scaler = StandardScaler()
-X_data_test = scaler.fit_transform(X_test)
-y_data_test = Y_test.to_numpy()
-final_clf.score(X_data_test, y_data_test)
-print("The accuracy is : ", final_clf.score(X_data_test, y_data_test))
-final_data = pipeline.fit_transform(df)
+    clf = RandomForestClassifier(random_state=42)
+    grid_search = GridSearchCV(clf, param_grid, cv=3, scoring="accuracy", n_jobs=-1)
+    grid_search.fit(X_train_scaled, y_train)
 
-X_final = final_data.drop(["Survived"], axis  = 1)
-Y_final = final_data["Survived"]
+    joblib.dump(grid_search.best_estimator_, "titanic_model.joblib")
+    joblib.dump(pipeline, "pipeline.joblib")
+    joblib.dump(scaler, "scaler.joblib")
+    joblib.dump(X_train.columns.tolist(), "feature_columns.joblib")
 
-scaler = StandardScaler()
-X_data_final = scaler.fit_transform(X_final)
-y_data_final = Y_final.to_numpy()
+    return grid_search.best_estimator_, pipeline, scaler, X_train.columns
 
-prod_clf = RandomForestClassifier()
-param_grid = [
-    {"n_estimators" : [10, 100, 200, 500], "max_depth": [None, 5, 10], "min_samples_split": [2, 3, 4]}
-]
 
-grid_search = GridSearchCV(prod_clf, param_grid, cv = 3, scoring=  "accuracy", return_train_score= True)
-grid_search.fit(X_data_final, y_data_final)
-prod_final_clf = grid_search.best_estimator_
+def run_app(model, pipeline, scaler, feature_columns):
+    st.set_page_config(page_title="Titanic Survival Predictor", page_icon="🚢")
 
-test_df = pd.read_csv("test.csv")
-final_test_data = pipeline.fit_transform(test_df)
-final_test_data.info()
+    st.title("Titanic Survival Prediction")
+    st.markdown("Predict whether a passenger would have survived the Titanic disaster")
 
-X_final_test = final_test_data
-X_final_test = X_final_test.ffill()
+    with st.form("passenger_details"):
+        col1, col2 = st.columns(2)
+        with col1:
+            pclass = st.selectbox(
+                "Passenger Class", [1, 2, 3], format_func=lambda x: f"Class {x}"
+            )
+        with col2:
+            sex = st.radio("Gender", ["Female", "Male"], horizontal=True)
 
-scaler = StandardScaler()
-X_data_final_test = scaler.fit_transform(X_final_test)
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            age = st.number_input("Age", min_value=0, max_value=100, value=30)
+        with col2:
+            sibsp = st.number_input(
+                "Siblings/Spouses", min_value=0, max_value=10, value=0
+            )
+        with col3:
+            parch = st.number_input(
+                "Parents/Children", min_value=0, max_value=10, value=0
+            )
 
-predictions = prod_final_clf.predict(X_data_final_test)
+        fare = st.number_input("Ticket Fare (£)", min_value=0.0, value=32.2, step=1.0)
+        embarked = st.selectbox(
+            "Embarkation Port",
+            ["S", "C", "Q"],
+            format_func=lambda x: {
+                "S": "Southampton",
+                "C": "Cherbourg",
+                "Q": "Queenstown",
+            }[x],
+        )
 
-final_df = pd.DataFrame(test_df["PassengerId"])
-final_df["Survived"] = predictions
-final_df.to_csv("gender_submission.csv", index = False)
+        submitted = st.form_submit_button("Predict Survival")
 
-final_df
-##Time to dump it##
-import joblib
-joblib.dump(prod_final_clf, "predicting_model.joblib")
+    if submitted:
+
+        input_dict = {
+            "PassengerId": [999],  # Dummy ID
+            "Pclass": [pclass],
+            "Name": ["Dummy"],
+            "Sex": [sex.lower()],
+            "Age": [age],
+            "SibSp": [sibsp],
+            "Parch": [parch],
+            "Ticket": ["Dummy"],
+            "Fare": [fare],
+            "Cabin": [None],
+            "Embarked": [embarked],
+        }
+        input_df = pd.DataFrame(input_dict)
+
+        try:
+            processed_data = pipeline.transform(input_df)
+
+            processed_data = processed_data.reindex(
+                columns=feature_columns, fill_value=0
+            )
+
+            scaled_data = scaler.transform(processed_data)
+
+            prediction = model.predict(scaled_data)[0]
+            proba = model.predict_proba(scaled_data)[0][1]
+
+            st.subheader("Prediction Result")
+            if prediction == 1:
+                st.success(f"Survived ({proba:.0%} probability)")
+            else:
+                st.error(f"Did Not Survive ({(1-proba):.0%} probability)")
+
+            st.progress(int(proba * 100))
+
+        except Exception as e:
+            st.error(f"Prediction failed: {str(e)}")
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--train", action="store_true", help="Train new model")
+    args = parser.parse_args()
+
+    if args.train:
+        print("Training new model...")
+        model, pipeline, scaler, feature_columns = train_model()
+    else:
+        try:
+            print("Loading existing model...")
+            model = joblib.load("titanic_model.joblib")
+            pipeline = joblib.load("pipeline.joblib")
+            scaler = joblib.load("scaler.joblib")
+            feature_columns = joblib.load("feature_columns.joblib")
+        except FileNotFoundError:
+            st.warning("Model not found. Training new model...")
+            model, pipeline, scaler, feature_columns = train_model()
+
+    run_app(model, pipeline, scaler, feature_columns)
