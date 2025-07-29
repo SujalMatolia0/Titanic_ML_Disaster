@@ -15,8 +15,8 @@ Requirements:
 
 Installation:
 1. Clone the repository:
-   git clone https://github.com/yourusername/titanic-survival-predictor.git
-   cd titanic-survival-predictor
+   git clone https://github.com/SujalMatolia0/Titanic_ML_Disaster.git
+   cd Titanic_ML_Disaster
 
 2. Install dependencies:
    pip install -r requirements.txt
